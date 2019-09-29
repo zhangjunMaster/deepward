@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/jun/tuntap"
+	"github.com/zhangjunMaster/deepward"
 )
 
 const (
@@ -45,7 +45,7 @@ func setTunLinux() {
 }
 
 func main() {
-	tun, err := tuntap.Open("tun0", tuntap.DevTun)
+	tun, err := deepward.Open("tun0", deepward.DevTun)
 	checkError(err)
 	switch runtime.GOOS {
 	case "linux":

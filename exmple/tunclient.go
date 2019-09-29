@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/jun/tuntap"
-	"github.com/jun/tuntap/util"
+	"github.com/zhangjunMaster/deepward"
+	"github.com/zhangjunMaster/deepward/util"
 )
 
 const (
@@ -39,7 +39,7 @@ func setTunLinux() {
 	// ip -4 route add s所有的流量都走 10.0.0.30 网卡
 	// 全部流量走网关
 	// exeCmd(fmt.Sprintf("ip -4 route add 0.0.0.0/1 via %s dev tun0", CLIENT_IP))
-	// https://github.com/jun/tuntap
+	// https://github.com/zhangjunMaster/deepward
 	// exeCmd(fmt.Sprintf("ip -4 route add 192.168.3.1/24 via %s dev tun0", CLIENT_IP))
 	// 查看路由有没有加上：route -n
 	exeCmd(fmt.Sprintf("ip -4 route add 106.15.180.58/32 via %s dev tun0", CLIENT_IP))
@@ -51,7 +51,7 @@ func main() {
 	rip := flag.String("r", "139.219.6.50", "server remote ip")
 	flag.Parse()
 
-	tun, err := tuntap.Open("tun0", tuntap.DevTun)
+	tun, err := deepward.Open("tun0", deepward.DevTun)
 	checkError(err)
 	switch runtime.GOOS {
 	case "linux":

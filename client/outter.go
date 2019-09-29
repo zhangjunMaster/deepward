@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/jun/tuntap"
-	"github.com/jun/tuntap/util"
+	"github.com/zhangjunMaster/deepward"
+	"github.com/zhangjunMaster/deepward/util"
 )
 
 const (
@@ -44,7 +44,7 @@ func setTunLinux() {
 func main() {
 
 	// 1.开启虚拟网卡
-	tun, err := tuntap.Open("tun0", tuntap.DevTun)
+	tun, err := deepward.Open("tun0", deepward.DevTun)
 	checkError(err)
 	setTunLinux()
 

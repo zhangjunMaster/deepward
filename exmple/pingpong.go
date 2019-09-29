@@ -1,11 +1,11 @@
-// Simple use of the tuntap package that prints packets received by the interface.
+// Simple use of the deepward package that prints packets received by the interface.
 package main
 
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/jun/tuntap"
-	"github.com/jun/tuntap/util"
+	"github.com/zhangjunMaster/deepward"
+	"github.com/zhangjunMaster/deepward/util"
 	"os"
 )
 
@@ -15,18 +15,18 @@ func main() {
 		return
 	}
 
-	var typ tuntap.DevKind
+	var typ deepward.DevKind
 	switch os.Args[1] {
 	case "tun":
-		typ = tuntap.DevTun
+		typ = deepward.DevTun
 	case "tap":
-		typ = tuntap.DevTap
+		typ = deepward.DevTap
 	default:
 		fmt.Println("Unknown device type", os.Args[1])
 		return
 	}
 
-	tun, err := tuntap.Open(os.Args[2], typ)
+	tun, err := deepward.Open(os.Args[2], typ)
 	if err != nil {
 		fmt.Println("Error opening tun/tap device:", err)
 		return

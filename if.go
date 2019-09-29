@@ -1,11 +1,11 @@
-// Package tuntap provides a portable interface to create and use
+// Package deepward provides a portable interface to create and use
 // TUN/TAP virtual network interfaces.
 //
 // Note that while this package lets you create the interface and pass
 // packets to/from it, it does not provide an API to configure the
 // interface. Interface configuration is a very large topic and should
 // be dealt with separately.
-package tuntap
+package deepward
 
 import (
 	"encoding/binary"
@@ -120,7 +120,7 @@ func (t *Interface) WritePacket(pkt *Packet) error {
 // latter case, the kernel will select an available interface name and
 // create it.
 //
-// Returns a TunTap object with channels to send/receive packets, or
+// Returns a deepward object with channels to send/receive packets, or
 // nil and an error if connecting to the interface failed.
 // func Open(ifPattern string, kind DevKind) (*Interface, error) {
 // 	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)

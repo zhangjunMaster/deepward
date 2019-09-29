@@ -1,5 +1,5 @@
-// Requirement: Install driver from http://tuntaposx.sourceforge.net/
-package tuntap
+// Requirement: Install driver from http://deepwardosx.sourceforge.net/
+package deepward
 
 import (
 	"os"
@@ -20,7 +20,7 @@ type ifReq struct {
 }
 
 func Open(ifPattern string, kind DevKind) (*Interface, error) {
-	file, err := os.OpenFile("/Users/jun/"+ifPattern, os.O_RDWR, os.ModeCharDevice)
+	file, err := os.OpenFile("/Users/zhangjunMaster/"+ifPattern, os.O_RDWR, os.ModeCharDevice)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/jun/tuntap/util"
+	"github.com/zhangjunMaster/deepward/util"
 	"golang.org/x/net/ipv6"
 	"golang.org/x/sys/unix"
 )
