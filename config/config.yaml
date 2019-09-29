@@ -1,0 +1,16 @@
+name : fknp
+  version : 4.2.1
+  # server敲门
+  server:
+    IP : 192.168.2.68
+    destIP : 192.168.2.68
+    port : 62201
+    receiveLen : 350
+    accessPort : tcp:9090,tcp:443
+  # 密钥
+  key:  
+    hmac : f36tZ1ak+Q+gZOBcn+j/rARvZHZKa/GJqjcZxZhe8=
+    aesKey : hKvtToZD8PZR8/GztldoThB3Z3uMcN4g2FRuf9kHY/8=
+    aesIV : hKvtToZD8PZR8/GztldoThB3Z3uMcN4g2FRuf9kHY/8=
+  # iptable初始化脚本文件
+  iptablesInitPath : ./iptables_default.sh

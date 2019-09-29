@@ -1,0 +1,13 @@
+{
+    "http.proxy": "http://40.125.172.218:7878",
+    "editor.accessibilitySupport": "on",
+    "workbench.colorTheme": "Monokai",
+    "files.autoSave": "onFocusChange",
+    "workbench.view.alwaysShowHeaderActions": true,
+    "workbench.editor.highlightModifiedTabs": true,
+    "workbench.settings.openDefaultKeybindings": true,
+    "workbench.settings.useSplitJSON": true,
+    "zenMode.hideLineNumbers": false,
+    "zenMode.hideStatusBar": false,
+    "zenMode.hideTabs": false
+}
