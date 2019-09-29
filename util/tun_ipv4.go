@@ -28,8 +28,16 @@ func IPv4Source(packet []byte) net.IP {
 	return net.IPv4(packet[12], packet[13], packet[14], packet[15])
 }
 
+func SetIPv4Source(packet []byte, source net.IP) {
+	copy(packet[12:16], source.To4())
+}
+
 func IPv4Destination(packet []byte) net.IP {
 	return net.IPv4(packet[16], packet[17], packet[18], packet[19])
+}
+
+func SetIPv4Destination(packet []byte, dest net.IP) {
+	copy(packet[16:20], dest.To4())
 }
 
 func IPv4Payload(packet []byte) []byte {
