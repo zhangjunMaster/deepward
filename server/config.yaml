@@ -4,7 +4,9 @@ version : 0.0.1
 TUN:
     IP: 10.0.0.2
     OUTTER_IP: 139.219.6.50
+    OUTTER_PORT: 9826
     ACCESS_PORT: "*"
+    LISTEN_PORT: 50879
   # 密钥
 key:  
     hmac : f36tZ1ak+Q+gZOBcn+j/rARvZHZKa/GJqjcZxZhe8=

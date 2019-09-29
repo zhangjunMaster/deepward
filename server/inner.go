@@ -22,8 +22,10 @@ import (
 //)
 
 var (
-	TUN_IP    string
-	OUTTER_IP string
+	TUN_IP      string
+	LISTEN_PORT int
+	OUTTER_IP   string
+	OUTTER_PORT int
 )
 
 func checkError(err error) {
@@ -62,7 +64,10 @@ func init() {
 		panic(err)
 	}
 	TUN_IP = viper.GetString("TUN.IP")
+	LISTEN_PORT = viper.GetInt("TUN.LISTEN_PORT")
 	OUTTER_IP = viper.GetString("TUN.OUTTER_IP")
+	OUTTER_PORT = viper.GetInt("TUN.OUTTER_PORT")
+
 }
 
 func main() {
@@ -72,8 +77,8 @@ func main() {
 	setTunServerLinux()
 
 	// 2.打洞，发送握手信息
-	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 50879} // 注意端口必须固定
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(OUTTER_IP), Port: 9826}
+	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: LISTEN_PORT} // 注意端口必须固定
+	dstAddr := &net.UDPAddr{IP: net.ParseIP(OUTTER_IP), Port: OUTTER_PORT}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
 		fmt.Println("[Listen UDP err]:", err)

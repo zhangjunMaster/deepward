@@ -21,9 +21,11 @@ import (
 //)
 
 var (
-	TUN_IP   string
-	VISIT_IP string
-	INNER_IP string
+	TUN_IP      string
+	VISIT_IP    string
+	INNER_IP    string
+	INNER_PORT  int
+	LISTEN_PORT int
 )
 
 // 部署在2.159上作为client
@@ -56,6 +58,8 @@ func init() {
 	TUN_IP = viper.GetString("TUN.IP")
 	VISIT_IP = viper.GetString("TUN.VISIT_IP")
 	INNER_IP = viper.GetString("TUN.INNER_IP")
+	INNER_PORT = viper.GetInt("TUN.INNER_PORT")
+	LISTEN_PORT = viper.GetInt("TUN.LISTEN_PORT")
 }
 
 func main() {
@@ -67,8 +71,8 @@ func main() {
 
 	// 2.打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
-	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 9826} // 注意端口必须固定
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(INNER_IP), Port: 50879}
+	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: LISTEN_PORT} // 注意端口必须固定
+	dstAddr := &net.UDPAddr{IP: net.ParseIP(INNER_IP), Port: INNER_PORT}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
 		fmt.Println("[Listen UDP err]:", err)
