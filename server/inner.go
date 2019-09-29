@@ -58,7 +58,7 @@ func checkErr(err error) {
 }
 
 func init() {
-	if err := config.Init(""); err != nil {
+	if err := config.Init("config.yaml"); err != nil {
 		panic(err)
 	}
 	TUN_IP = viper.GetString("TUN.IP")

@@ -1,14 +1,14 @@
 name : deepward
-  version : 0.0.1
+version : 0.0.1
   # server敲门
-  TUN:
+TUN:
     IP: 10.0.0.2
     OUTTER_IP: 139.219.6.50
-    ACCESS_PORT: *
+    ACCESS_PORT: "*"
   # 密钥
-  key:  
+key:  
     hmac : f36tZ1ak+Q+gZOBcn+j/rARvZHZKa/GJqjcZxZhe8=
     aesKey : hKvtToZD8PZR8/GztldoThB3Z3uMcN4g2FRuf9kHY/8=
     aesIV : hKvtToZD8PZR8/GztldoThB3Z3uMcN4g2FRuf9kHY/8=
   # iptable初始化脚本文件
-  iptablesInitPath : ./iptables_default.sh
+iptablesInitPath : ./iptables_default.sh
