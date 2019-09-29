@@ -8,15 +8,22 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/zhangjunMaster/deepward"
+	"github.com/zhangjunMaster/deepward/config"
 	"github.com/zhangjunMaster/deepward/util"
 	"golang.org/x/net/ipv4"
 )
 
 // 部署在内网 2.159，为 6.50 打洞
-const (
-	TUN_IP    = "10.0.0.2"
-	OUTTER_IP = "139.219.6.50"
+//const (
+//	TUN_IP    = "10.0.0.2"
+//	OUTTER_IP = "139.219.6.50"
+//)
+
+var (
+	TUN_IP    string
+	OUTTER_IP string
 )
 
 func checkError(err error) {
@@ -41,6 +48,21 @@ func setTunServerLinux() {
 	// 把符合条件的用公网ip出去
 	exeCmd("iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o eth0 -j MASQUERADE")
 	exeCmd("echo '1' > /proc/sys/net/ipv4/ip_forward")
+}
+
+func checkErr(err error) {
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func init() {
+	if err := config.Init(""); err != nil {
+		panic(err)
+	}
+	TUN_IP = viper.GetString("TUN.IP")
+	OUTTER_IP = viper.GetString("TUN.OUTTER_IP")
 }
 
 func main() {

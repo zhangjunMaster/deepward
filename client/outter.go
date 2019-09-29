@@ -8,14 +8,22 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/spf13/viper"
 	"github.com/zhangjunMaster/deepward"
+	"github.com/zhangjunMaster/deepward/config"
 	"github.com/zhangjunMaster/deepward/util"
 )
 
-const (
-	TUN_IP   = "10.0.0.30"
-	VISIT_IP = "192.168.3.49"
-	INNER_IP = "124.193.68.147"
+//const (
+//	TUN_IP   = "10.0.0.30"
+//	VISIT_IP = "192.168.3.51"
+//	INNER_IP = "124.193.68.147"
+//)
+
+var (
+	TUN_IP   string
+	VISIT_IP string
+	INNER_IP string
 )
 
 // 部署在2.159上作为client
@@ -39,6 +47,15 @@ func setTunLinux() {
 	exeCmd("ip link set dev tun0 up")
 	exeCmd(fmt.Sprintf("ip addr add %s/24 dev tun0", TUN_IP))
 	exeCmd(fmt.Sprintf("ip -4 route add %s/32 via %s dev tun0", VISIT_IP, TUN_IP))
+}
+
+func init() {
+	if err := config.Init(""); err != nil {
+		panic(err)
+	}
+	TUN_IP = viper.GetString("TUN.IP")
+	VISIT_IP = viper.GetString("TUN.VISIT_IP")
+	INNER_IP = viper.GetString("TUN.INNER_IP")
 }
 
 func main() {

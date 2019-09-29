@@ -1,12 +1,10 @@
-name : fknp
-  version : 4.2.1
+name : deepward
+  version : 0.0.1
   # server敲门
-  server:
-    IP : 192.168.2.68
-    destIP : 192.168.2.68
-    port : 62201
-    receiveLen : 350
-    accessPort : tcp:9090,tcp:443
+  TUN:
+    IP: 10.0.0.2
+    OUTTER_IP: 139.219.6.50
+    ACCESS_PORT: *
   # 密钥
   key:  
     hmac : f36tZ1ak+Q+gZOBcn+j/rARvZHZKa/GJqjcZxZhe8=
