@@ -37,7 +37,7 @@ func DecryptAES(src []byte, key []byte) []byte {
 }
 
 func main() {
-	x := []byte("世界上最邪恶最专制的现代奴隶制国家--朝鲜")
+	x := []byte("test data")
 	key := []byte("hgfedcba87654321")
 	x1 := EncryptAES(x, key)
 	x2 := DecryptAES(x1, key)
