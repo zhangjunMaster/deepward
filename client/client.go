@@ -109,7 +109,7 @@ func main() {
 			}
 			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 			// 加密
-			payload := util.IPv4Payload(buf)
+			//payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
 			// n, err = conn.WriteTo(buf[:n], dstAddr) 原始写法
