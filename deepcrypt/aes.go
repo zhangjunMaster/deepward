@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"encoding/base64"
-	"fmt"
 	"math/rand"
 	"time"
 )
@@ -49,13 +47,13 @@ func getRandomString(length int) string {
 	return string(result)
 }
 
-func main() {
-	x := []byte("test iutirtui datatest 45435 datatest gsfgds datatest 5436546 datatest datatest datatest datatest datatest datatest datatest datatest data")
-	keyString := getRandomString(16)
-	key := []byte(keyString)
-	fmt.Println("[len]:", len(key))
-	x1 := EncryptAES(x, key)
-	x2 := DecryptAES(x1, key)
-	fmt.Println(base64.StdEncoding.EncodeToString(x1))
-	fmt.Print(string(x2))
-}
+//func main() {
+//	x := []byte("test iutirtui datatest 45435 datatest gsfgds datatest 5436546 datatest datatest datatest datatest datatest datatest datatest datatest data")
+//	keyString := getRandomString(16)
+//	key := []byte(keyString)
+//	fmt.Println("[len]:", len(key))
+//	x1 := EncryptAES(x, key)
+//	x2 := DecryptAES(x1, key)
+//	fmt.Println(base64.StdEncoding.EncodeToString(x1))
+//	fmt.Print(string(x2))
+//}
