@@ -88,7 +88,8 @@ func main() {
 	defer conn.Close()
 
 	var n int
-	if n, err = conn.WriteTo([]byte("我是打洞消息"), dstAddr); err != nil {
+	pingpong := deepcrypt.EncryptAES([]byte("我是打洞消息"), []byte("1234567899876543"))
+	if n, err = conn.WriteTo(pingpong, dstAddr); err != nil {
 		log.Println("send handshake:", err)
 	}
 	fmt.Println("[conn write 我是打洞消息]", n)
@@ -96,7 +97,8 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
-			if n, err = conn.WriteTo([]byte("from ["+TUN_IP+"]"), dstAddr); err != nil {
+			tunipdata := deepcrypt.EncryptAES([]byte("from ["+TUN_IP+"]"), []byte("1234567899876543"))
+			if n, err = conn.WriteTo(tunipdata, dstAddr); err != nil {
 				log.Println("send msg fail", err)
 			}
 			fmt.Println("[打洞] dst:", OUTTER_IP, "[打洞数据]:", n)
