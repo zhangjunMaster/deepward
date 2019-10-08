@@ -88,7 +88,7 @@ func main() {
 	defer conn.Close()
 
 	var n int
-	pingpong := deepcrypt.EncryptAES([]byte("我是打洞消息"), []byte("1234567899876543"))
+	pingpong := deepcrypt.EncryptAES([]byte("pingpong"), []byte("1234567899876543"))
 	if n, err = conn.WriteTo(pingpong, dstAddr); err != nil {
 		log.Println("send handshake:", err)
 	}
@@ -139,7 +139,7 @@ func main() {
 			fmt.Println("udp Read error:", err)
 			continue
 		}
-		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
+		fmt.Printf("[conn 收到数据  before]:%s\n", buf[:n])
 		//  fromAddr.String() => endpoint ip
 		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		fmt.Println("[3 fromAddr]:", fromAddr)
@@ -160,6 +160,7 @@ func main() {
 
 		// n, err = tun.Write(buf[:n]) 原始写法
 		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
+		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {
 			fmt.Println("[tun client write to tun] udp write error:", err)

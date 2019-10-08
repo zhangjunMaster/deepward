@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/zhangjunMaster/deepward/deepcrypt"
 )
 
 func PingPong(listenPort int, tunIP string, dstPort int, dstIP string) (*net.UDPConn, error) {
@@ -19,7 +21,8 @@ func PingPong(listenPort int, tunIP string, dstPort int, dstIP string) (*net.UDP
 	//defer conn.Close()
 
 	var n int
-	if n, err = conn.WriteTo([]byte("ping"), dstAddr); err != nil {
+	pingpong := deepcrypt.EncryptAES([]byte("ping"), []byte("1234567899876543"))
+	if n, err = conn.WriteTo(pingpong, dstAddr); err != nil {
 		log.Println("send handshake:", err)
 	}
 	fmt.Println("[conn write ping]", n)
@@ -30,7 +33,8 @@ func PingPong(listenPort int, tunIP string, dstPort int, dstIP string) (*net.UDP
 	go func() {
 		for {
 			time.Sleep(10 * time.Second)
-			if _, err = conn.WriteTo([]byte("from ["+tunIP+"]"), dstAddr); err != nil {
+			tunipdecrypt := deepcrypt.EncryptAES([]byte(tunIP), []byte("1234567899876543"))
+			if _, err = conn.WriteTo(tunipdecrypt, dstAddr); err != nil {
 				log.Println("send msg fail", err)
 			}
 			fmt.Println("[ping] dst:", dstIP)

@@ -56,8 +56,8 @@ func init() {
 	}
 	TUN_IP = viper.GetString("TUN.IP")
 	ALLOW_IP = viper.GetString("TUN.ALLOW_IP")
-	DST_IP = viper.GetString("TUN.DST_IP")
-	DST_PORT = viper.GetInt("TUN.DST_PORT")
+	DST_IP = viper.GetString("PEER.IP")
+	DST_PORT = viper.GetInt("PEER.PORT")
 	PORT = viper.GetInt("TUN.PORT")
 }
 
