@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/zhangjunMaster/deepward"
 	"github.com/zhangjunMaster/deepward/config"
+	"github.com/zhangjunMaster/deepward/deepcrypt"
 	"github.com/zhangjunMaster/deepward/util"
 )
 
@@ -111,7 +112,10 @@ func main() {
 			payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
-			n, err = conn.WriteTo(buf[:n], dstAddr)
+			// n, err = conn.WriteTo(buf[:n], dstAddr) 原始写法
+			edata := deepcrypt.EncryptAES(buf[:n], []byte("1234567899876543"))
+			n, err = conn.WriteTo(edata, dstAddr)
+
 			if err != nil {
 				fmt.Println("udp write error:", err)
 				continue
@@ -131,7 +135,11 @@ func main() {
 		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
 		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-		n, err = tun.Write(buf[:n])
+
+		//n, err = tun.Write(buf[:n]) 原始写法
+		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
+		n, err = tun.Write(ddata)
+
 		if err != nil {
 			fmt.Println("[tun client write to tun] udp write error:", err)
 			continue
