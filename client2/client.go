@@ -79,6 +79,7 @@ func main() {
 		fmt.Println("[ExchangeAesKey err]", err)
 		return
 	}
+	fmt.Println("[aesKey]:", aesKey)
 
 	// 3.tun接收和发送消息
 	fmt.Println("[tun client] Waiting IP Packet from tun interface")

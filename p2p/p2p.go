@@ -16,7 +16,7 @@ type P2P struct {
 	DstAddr *net.UDPAddr
 	Conn    *net.UDPConn
 	TUNPRK  string
-	TUNPUK  string
+	PEERPUK string
 }
 
 func GenerateP2P(listenPort int, tunIP string, dstPort int, dstIP string) (*P2P, error) {
@@ -32,8 +32,8 @@ func GenerateP2P(listenPort int, tunIP string, dstPort int, dstIP string) (*P2P,
 		TunIP:   tunIP,
 		DstAddr: dstAddr,
 		Conn:    conn,
-		TUNPRK:  viper.GetString("TUN.TUNPRK"),
-		TUNPUK:  viper.GetString("TUN.TUNPRK"),
+		TUNPRK:  viper.GetString("TUN.PRK"),
+		PEERPUK: viper.GetString("PEER.PUK"),
 	}, nil
 }
 
@@ -63,8 +63,9 @@ func (p *P2P) PingPong() error {
 
 func (p *P2P) ExchangeAesKey() (string, error) {
 	aesKey := deepcrypt.Generate128Key(16)
-	peerPuk := p.TUNPUK
+	peerPuk := p.PEERPUK
 	// use puk encrypt aeskey
+	fmt.Println("[ExchangeAesKey]", "[aesKey]", aesKey, "[peerPuk]:", peerPuk)
 	eKey, err := deepcrypt.Encrypt([]byte(aesKey), peerPuk)
 	if err != nil {
 		return "", err
