@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 
@@ -13,12 +12,6 @@ import (
 	"github.com/zhangjunMaster/deepward/tun"
 	"github.com/zhangjunMaster/deepward/util"
 )
-
-//const (
-//	TUN_IP   = "10.0.0.30"
-//	ALLOW_IP = "192.168.3.51"
-//	DST_IP = "124.193.68.147"
-//)
 
 var (
 	TUN_IP   string
@@ -71,12 +64,24 @@ func main() {
 
 	// 2.p2p打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
-	conn, err := p2p.PingPong(PORT, TUN_IP, DST_PORT, DST_IP)
-	defer conn.Close()
+	p, err := p2p.GenerateP2P(PORT, TUN_IP, DST_PORT, DST_IP)
+	defer p.Conn.Close()
+	if err != nil {
+		fmt.Println("[GenerateP2P err]:", err)
+		return
+	}
+	// pingpong
+	err = p.PingPong()
+
+	// exchage aes key
+	aesKey, err := p.ExchangeAesKey()
+	if err != nil {
+		fmt.Println("[ExchangeAesKey err]", err)
+		return
+	}
 
 	// 3.tun接收和发送消息
 	fmt.Println("[tun client] Waiting IP Packet from tun interface")
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(DST_IP), Port: DST_PORT}
 
 	go func() {
 		buf := make([]byte, 10000)
@@ -88,13 +93,10 @@ func main() {
 				continue
 			}
 			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
-			// 加密
-			//payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
-			edata := deepcrypt.EncryptAES(buf[:n], []byte("1234567899876543"))
-			n, err = conn.WriteTo(edata, dstAddr)
-
+			edata := deepcrypt.EncryptAES(buf[:n], []byte(aesKey))
+			n, err = p.Conn.WriteTo(edata, p.DstAddr)
 			if err != nil {
 				fmt.Println("udp write error:", err)
 				continue
@@ -106,7 +108,7 @@ func main() {
 	buf := make([]byte, 10000)
 	for {
 		// 3.conn连接中读取 buf
-		n, fromAddr, err := conn.ReadFromUDP(buf)
+		n, fromAddr, err := p.Conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("udp Read error:", err)
 			continue
@@ -114,7 +116,7 @@ func main() {
 		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
 		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
+		ddata := deepcrypt.DecryptAES(buf[:n], []byte(aesKey))
 		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {

@@ -6,7 +6,11 @@ TUN:
     PORT: 50879
     ALLOW_IP: 192.168.3.51
     ALLOW_PORT: "*"
+    PRK: 9iC6PwXgp/6VxXMcq/cQKHwCpX/j5IxIsGFM6gWm8S0=
+    PUK: BN6vEfnXVeqF7ry1oarKBLQ7kCDG7hrkVCv9rDgPv8genRMosu/y+Ow9770X0rOLzFEjEuJfN6WyHEq+yDarcnU=
 
 PEER:
     PORT: 9826
     IP: 139.219.6.50
+    PRK: xDuiZavqIr1UlBeLHCPEsytZoC0JAqRnmF+o0NP2hxI=
+    PUK: BLpNRAktGP2l0Wbi7L79dVZBfOIBsWOnJt8xhzmPsErvPSl7lPCjMgZGei/KBitvKZEm1QR+HCaBi/YOHumTxnY=

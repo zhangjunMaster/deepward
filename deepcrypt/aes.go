@@ -36,7 +36,7 @@ func DecryptAES(src []byte, key []byte) []byte {
 	return src
 }
 
-func getRandomString(length int) string {
+func Generate128Key(length int) string {
 	str := "0123456789!@#$%^&*()_-+={}[]|:;,.?/abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
 	result := []byte{}

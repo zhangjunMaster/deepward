@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 
@@ -68,13 +67,14 @@ func main() {
 	// 2.p2p打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
 	fmt.Println("[pingpong]", PORT, TUN_IP, DST_PORT, DST_IP)
-	conn, err := p2p.PingPong(PORT, TUN_IP, DST_PORT, DST_IP)
-	defer conn.Close()
+	p, err := p2p.GenerateP2P(PORT, TUN_IP, DST_PORT, DST_IP)
+	//conn, err := p2p.PingPong(PORT, TUN_IP, DST_PORT, DST_IP)
+	defer p.Conn.Close()
 
 	// 3.tun接收和发送消息
 	fmt.Println("[tun client] Waiting IP Packet from tun interface")
-	dstAddr := &net.UDPAddr{IP: net.ParseIP(DST_IP), Port: DST_PORT}
-
+	//dstAddr := &net.UDPAddr{IP: net.ParseIP(DST_IP), Port: DST_PORT}
+	var aesKey []byte
 	go func() {
 		buf := make([]byte, 10000)
 		for {
@@ -89,8 +89,8 @@ func main() {
 			//payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
-			edata := deepcrypt.EncryptAES(buf[:n], []byte("1234567899876543"))
-			n, err = conn.WriteTo(edata, dstAddr)
+			edata := deepcrypt.EncryptAES(buf[:n], aesKey)
+			n, err = p.Conn.WriteTo(edata, p.DstAddr)
 			if err != nil {
 				fmt.Println("udp write error:", err)
 				continue
@@ -102,15 +102,27 @@ func main() {
 	buf := make([]byte, 10000)
 	for {
 		// 3.conn连接中读取 buf
-		n, fromAddr, err := conn.ReadFromUDP(buf)
+		n, fromAddr, err := p.Conn.ReadFromUDP(buf)
 		if err != nil {
 			fmt.Println("udp Read error:", err)
 			continue
 		}
 		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
 		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
+
+		newAesKey, err := p.DecrptKey(buf[:n])
+		if err != nil {
+			fmt.Println("[DecrptKey error]:", err)
+			continue
+		}
+		if newAesKey == nil && len(aesKey) == 0 {
+			fmt.Println("[no aes key]")
+			continue
+		} else {
+			aesKey = newAesKey
+		}
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
+		ddata := deepcrypt.DecryptAES(buf[:n], aesKey)
 		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {
