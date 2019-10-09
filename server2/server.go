@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/zhangjunMaster/deepward/p2p"
 	"github.com/zhangjunMaster/deepward/tun"
 	"github.com/zhangjunMaster/deepward/util"
+	"golang.org/x/net/ipv4"
 )
 
 var (
@@ -57,8 +59,18 @@ func init() {
 	DST_PORT = viper.GetInt("PEER.PORT")
 }
 
-func main() {
+func parseHeader(buf []byte, n int, fromAddr *net.UDPAddr) {
+	fmt.Println("--------------\n")
+	fmt.Printf("[1 tun  receive from remote] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+	header, _ := ipv4.ParseHeader(buf)
+	fmt.Printf("[2header]: %+v \n", header)
+	fmt.Printf("[3 tun payload header port]  %d \n", util.IPv4DestinationPort(buf))
+	fmt.Printf("[4 from address]:%+v\n", fromAddr)
+	fmt.Printf("[5 dst ip]: %+v", util.IPv4Destination(buf))
+	fmt.Println("--------------\n")
+}
 
+func main() {
 	// 1.开启虚拟网卡
 	tun, err := tun.Open("tun0", tun.DevTun)
 	checkError(err)
@@ -66,14 +78,12 @@ func main() {
 
 	// 2.p2p打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
-	fmt.Println("[pingpong]", PORT, TUN_IP, DST_PORT, DST_IP)
 	p, err := p2p.GenerateP2P(PORT, TUN_IP, DST_PORT, DST_IP)
-	//conn, err := p2p.PingPong(PORT, TUN_IP, DST_PORT, DST_IP)
 	defer p.Conn.Close()
+	err = p.PingPong()
 
 	// 3.tun接收和发送消息
 	fmt.Println("[tun client] Waiting IP Packet from tun interface")
-	//dstAddr := &net.UDPAddr{IP: net.ParseIP(DST_IP), Port: DST_PORT}
 	var aesKey []byte
 	go func() {
 		buf := make([]byte, 10000)
@@ -85,12 +95,17 @@ func main() {
 				continue
 			}
 			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
-			// 加密
-			//payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
+			if len(aesKey) == 0 {
+				fmt.Println("[no aes key]")
+				continue
+			}
+
 			edata := deepcrypt.EncryptAES(buf[:n], aesKey)
-			n, err = p.Conn.WriteTo(edata, p.DstAddr)
+			data := util.GenMsg("aes", edata)
+
+			n, err = p.Conn.WriteTo(data, p.DstAddr)
 			if err != nil {
 				fmt.Println("udp write error:", err)
 				continue
@@ -107,28 +122,38 @@ func main() {
 			fmt.Println("udp Read error:", err)
 			continue
 		}
-		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
-		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
+		// ecc decrypt
+		if buf[0] == 0 && buf[1] == 0 {
+			newAesKey, err := p.DecrptKey(buf[:n])
+			if err != nil {
+				fmt.Println("[DecrptKey error]:", err)
+				continue
+			}
+			if newAesKey == nil && len(aesKey) == 0 {
+				fmt.Println("[no aes key]")
+				continue
+			} else if len(newAesKey) != 0 {
+				aesKey = newAesKey
+			}
+		}
 
-		newAesKey, err := p.DecrptKey(buf[:n])
-		if err != nil {
-			fmt.Println("[DecrptKey error]:", err)
-			continue
-		}
-		if newAesKey == nil && len(aesKey) == 0 {
-			fmt.Println("[no aes key]")
-			continue
-		} else {
-			aesKey = newAesKey
-		}
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-		ddata := deepcrypt.DecryptAES(buf[:n], aesKey)
-		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
-		n, err = tun.Write(ddata)
-		if err != nil {
-			fmt.Println("[tun client write to tun] udp write error:", err)
+		// aes decrypt
+		if len(aesKey) == 0 {
+			fmt.Println("no aes key")
 			continue
 		}
-		fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		if buf[0] == 0 && buf[1] == 1 {
+			fmt.Println("[aesKey]:", aesKey)
+			ddata := deepcrypt.DecryptAES(buf[2:n], aesKey)
+			// decrypt is right
+			parseHeader(buf[2:n], n, fromAddr)
+			n, err = tun.Write(ddata)
+			if err != nil {
+				fmt.Println("[tun client write to tun] udp write error:", err)
+				continue
+			}
+			fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		}
 	}
 }

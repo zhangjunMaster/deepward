@@ -95,8 +95,8 @@ func (p *P2P) DecrptKey(eKey []byte) ([]byte, error) {
 	if eKey[0] != 0 || eKey[1] != 0 {
 		return nil, nil
 	}
-
-	dKey, err := deepcrypt.Encrypt(eKey[2:], p.TUNPRK)
+	fmt.Println("[eKey[2:]]:", eKey[2:])
+	dKey, err := deepcrypt.Decrypt(eKey[2:], p.TUNPRK)
 	if err != nil {
 		return nil, err
 	}
