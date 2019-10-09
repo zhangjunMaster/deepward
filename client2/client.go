@@ -97,7 +97,9 @@ func main() {
 
 			// 2.将接收的数据通过conn发送出去
 			edata := deepcrypt.EncryptAES(buf[:n], []byte(aesKey))
-			n, err = p.Conn.WriteTo(edata, p.DstAddr)
+			lable := []byte{0, 1}
+			data := util.Concat(lable, edata)
+			n, err = p.Conn.WriteTo(data, p.DstAddr)
 			if err != nil {
 				fmt.Println("udp write error:", err)
 				continue
@@ -117,7 +119,10 @@ func main() {
 		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
 		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-		ddata := deepcrypt.DecryptAES(buf[:n], []byte(aesKey))
+		if buf[0] != 0 && buf[1] != 0 {
+			continue
+		}
+		ddata := deepcrypt.DecryptAES(buf[2:n], []byte(aesKey))
 		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {

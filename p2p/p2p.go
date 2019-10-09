@@ -77,7 +77,9 @@ func (p *P2P) ExchangeAesKey() (string, error) {
 	buffer.Write(lable)
 	buffer.Write(eKey)
 	data := buffer.Bytes()
+	fmt.Println("[ExchangeAesKey data]:", data)
 	// exchage aeskey
+
 	n, err := p.Conn.WriteTo(data, p.DstAddr)
 	if err != nil {
 		log.Println("send handshake:", err)
