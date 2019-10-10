@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -18,7 +19,7 @@ const (
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		os.Exit(1)
 	}
 }
@@ -26,10 +27,10 @@ func checkError(err error) {
 func exeCmd(cmd string) {
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
+		log.Printf("execute %s error:%v", cmd, err)
 		os.Exit(1)
 	}
-	fmt.Println(string(out))
+	log.Println(string(out))
 }
 
 func setTunLinux() {
@@ -57,7 +58,7 @@ func main() {
 	case "linux":
 		setTunLinux()
 	default:
-		fmt.Println("OS NOT supported")
+		log.Println("OS NOT supported")
 		os.Exit(1)
 	}
 
@@ -65,30 +66,30 @@ func main() {
 	checkError(err)
 	raddr, err := net.ResolveUDPAddr("udp", *rip+":9826")
 	checkError(err)
-	fmt.Println("[laddr]", "local address", "[raddr]", raddr)
+	log.Println("[laddr]", "local address", "[raddr]", raddr)
 	// laddr is local address
 	conn, err := net.DialUDP("udp", nil, raddr)
 	checkError(err)
 	defer conn.Close()
 
-	fmt.Println("[tun client] Waiting IP Packet from tun interface")
+	log.Println("[tun client] Waiting IP Packet from tun interface")
 	go func() {
 		buf := make([]byte, 10000)
 		for {
 			// 1.tun接收来自物理网卡的数据
 			n, err := tun.Read(buf)
 			if err != nil {
-				fmt.Println("tun Read error:", err)
+				log.Println("tun Read error:", err)
 				continue
 			}
-			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+			log.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 			// 2.将接收的数据通过conn发送出去
 			n, err = conn.Write(buf[:n])
 			if err != nil {
-				fmt.Println("udp write error:", err)
+				log.Println("udp write error:", err)
 				continue
 			}
-			fmt.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
+			log.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
 		}
 	}()
 
@@ -97,16 +98,16 @@ func main() {
 		// 3.conn连接中读取 buf
 		n, _, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("udp Read error:", err)
+			log.Println("udp Read error:", err)
 			continue
 		}
 		fmt.Sprintf("[tun client receive from dest] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
 		n, err = tun.Write(buf[:n])
 		if err != nil {
-			fmt.Println("[tun client write to tun] udp write error:", err)
+			log.Println("[tun client write to tun] udp write error:", err)
 			continue
 		}
-		fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 	}
 }

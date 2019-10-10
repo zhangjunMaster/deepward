@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -28,7 +29,7 @@ func GenMsg(lable string, data []byte) []byte {
 
 func CheckError(err error) {
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		os.Exit(1)
 	}
 }
@@ -36,14 +37,14 @@ func CheckError(err error) {
 func ExeCmd(cmd string) {
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
+		log.Printf("execute %s error:%v", cmd, err)
 		os.Exit(1)
 	}
-	fmt.Println(string(out))
+	log.Println(string(out))
 }
 
 func SetTunClientLinux(TUN_IP string, ALLOW_IP string) {
-	fmt.Println("[TUN_IP]", TUN_IP, "[ALLOW_IP]", ALLOW_IP)
+	log.Println("[TUN_IP]", TUN_IP, "[ALLOW_IP]", ALLOW_IP)
 	ExeCmd("ip link set dev tun0 up")
 	ExeCmd(fmt.Sprintf("ip addr add %s/24 dev tun0", TUN_IP))
 	ExeCmd(fmt.Sprintf("ip -4 route add %s/32 via %s dev tun0", ALLOW_IP, TUN_IP))

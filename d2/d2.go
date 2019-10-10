@@ -8,34 +8,17 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/spf13/viper"
-	"github.com/zhangjunMaster/deepward"
-	"github.com/zhangjunMaster/deepward/config"
-	"github.com/zhangjunMaster/deepward/deepcrypt"
+	"github.com/songgao/water"
 	"github.com/zhangjunMaster/deepward/util"
 )
 
-//const (
-//	TUN_IP   = "10.0.0.30"
-//	VISIT_IP = "192.168.3.51"
-//	INNER_IP = "124.193.68.147"
-//)
-
 var (
-	TUN_IP      string
-	VISIT_IP    string
-	INNER_IP    string
-	INNER_PORT  int
-	LISTEN_PORT int
+	TUN_IP      = "10.1.0.10"
+	VISIT_IP    = "192.168.2.97"
+	INNER_IP    = "192.168.2.154"
+	INNER_PORT  = 50879
+	LISTEN_PORT = 9826
 )
-
-// 部署在2.159上作为client
-func checkError(err error) {
-	if err != nil {
-		log.Println("Error:", err)
-		os.Exit(1)
-	}
-}
 
 func exeCmd(cmd string) {
 	out, err := exec.Command("bash", "-c", cmd).Output()
@@ -46,30 +29,31 @@ func exeCmd(cmd string) {
 	log.Println(string(out))
 }
 
-func setTunLinux() {
-	exeCmd("ip link set dev tun0 up")
-	exeCmd(fmt.Sprintf("ip addr add %s/24 dev tun0", TUN_IP))
-	exeCmd(fmt.Sprintf("ip -4 route add %s/32 via %s dev tun0", VISIT_IP, TUN_IP))
+func setTunDarwin() {
+	exeCmd(fmt.Sprintf("ifconfig utun1 inet %s/24 %s up", TUN_IP, TUN_IP))
+	exeCmd(fmt.Sprintf("route -n add 0.0.0.0/1 %s", TUN_IP))
+	exeCmd(fmt.Sprintf("route -n add 128.0.0.0/1 %s", TUN_IP))
 }
 
-func init() {
-	if err := config.Init("config.yaml"); err != nil {
-		panic(err)
-	}
-	TUN_IP = viper.GetString("TUN.IP")
-	VISIT_IP = viper.GetString("TUN.VISIT_IP")
-	INNER_IP = viper.GetString("TUN.INNER_IP")
-	INNER_PORT = viper.GetInt("TUN.INNER_PORT")
-	LISTEN_PORT = viper.GetInt("TUN.LISTEN_PORT")
-}
+//sudo ifconfig utun1 10.1.0.10 10.1.0.20 up
+//sudo route -n add -net 192.168.2.97/32 10.1.0.10
+
+//route delete 192.168.2.97/32 10.1.0.10 删除
+//route -n add -net 192.168.3.51 10.1.0.10  访问192.168.3.51走10.1.0.10
+//route -n add -net en0 -netmask 255.255.255.0 10.1.0.10
+// netstat -rn 查看路由表
 
 func main() {
+	tun, err := water.New(water.Config{
+		DeviceType: water.TUN,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// 1.开启虚拟网卡
-	tun, err := deepward.Open("tun0", deepward.DevTun)
-	checkError(err)
-	setTunLinux()
-
+	log.Printf("Interface Name: %s\n", tun.Name())
+	// 设置脚本
+	setTunDarwin()
 	// 2.打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
 	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: LISTEN_PORT} // 注意端口必须固定
@@ -97,7 +81,8 @@ func main() {
 		}
 	}()
 
-	log.Println("[tun client] Waiting IP Packet from tun interface")
+	log.Println("[tun client] Waiting IP buf from tun interface")
+
 	go func() {
 		buf := make([]byte, 10000)
 		for {
@@ -112,10 +97,7 @@ func main() {
 			//payload := util.IPv4Payload(buf)
 
 			// 2.将接收的数据通过conn发送出去
-			// n, err = conn.WriteTo(buf[:n], dstAddr) 原始写法
-			edata := deepcrypt.EncryptAES(buf[:n], []byte("1234567899876543"))
-			n, err = conn.WriteTo(edata, dstAddr)
-
+			n, err = conn.WriteTo(buf[:n], dstAddr)
 			if err != nil {
 				log.Println("udp write error:", err)
 				continue
@@ -135,15 +117,12 @@ func main() {
 		log.Printf("[conn 收到数据]:%s\n", buf[:n])
 		log.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
-
-		//n, err = tun.Write(buf[:n]) 原始写法
-		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
-		n, err = tun.Write(ddata)
-
+		n, err = tun.Write(buf[:n])
 		if err != nil {
 			log.Println("[tun client write to tun] udp write error:", err)
 			continue
 		}
 		log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 	}
+
 }

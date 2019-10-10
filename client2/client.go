@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -44,7 +44,7 @@ func main() {
 	p, err := p2p.GenerateP2P(PORT, TUN_IP, DST_PORT, DST_IP)
 	defer p.Conn.Close()
 	if err != nil {
-		fmt.Println("[GenerateP2P err]:", err)
+		log.Println("[Gen P2P err]:", err)
 		return
 	}
 	// pingpong
@@ -53,13 +53,12 @@ func main() {
 	// exchage aes key
 	aesKey, err := p.ExchangeAesKey()
 	if err != nil {
-		fmt.Println("[ExchangeAesKey err]", err)
+		log.Println("[Exchange Aes Key err]", err)
 		return
 	}
-	fmt.Println("[aesKey]:", aesKey)
 
 	// 3.tun接收和发送消息
-	fmt.Println("[tun client] Waiting IP Packet from tun interface")
+	log.Println("[tun client] Waiting IP Packet from tun interface")
 
 	go func() {
 		buf := make([]byte, 10000)
@@ -67,16 +66,16 @@ func main() {
 			// 1.tun接收来自物理网卡的数据
 			n, err := tun.Read(buf)
 			if err != nil {
-				fmt.Println("tun Read error:", err)
+				log.Println("[tun Read error]:", err)
 				continue
 			}
-			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+			//log.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 			// 过滤
 			// 2.将接收的数据通过conn发送出去
-			fmt.Println("[port]", util.IPv4DestinationPort(buf), int(util.IPv4DestinationPort(buf)))
+			//log.Println("[port]", util.IPv4DestinationPort(buf), int(util.IPv4DestinationPort(buf)))
 			dstPort := strconv.Itoa(int(util.IPv4DestinationPort(buf)))
 			if !util.Filter(ALLOW_PORT, dstPort) {
-				fmt.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
+				log.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
 				continue
 			}
 			edata := deepcrypt.EncryptAES(buf[:n], []byte(aesKey))
@@ -84,10 +83,10 @@ func main() {
 			data := util.Concat(lable, edata)
 			n, err = p.Conn.WriteTo(data, p.DstAddr)
 			if err != nil {
-				fmt.Println("udp write error:", err)
+				log.Println("[udp write error]:", err)
 				continue
 			}
-			fmt.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
+			//log.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
 		}
 	}()
 
@@ -96,22 +95,22 @@ func main() {
 		// 3.conn连接中读取 buf
 		n, fromAddr, err := p.Conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("udp Read error:", err)
+			log.Println("[udp Read error]:", err)
 			continue
 		}
-		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
-		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
+		//log.Printf("[conn 收到数据]:%s\n", buf[:n])
+		log.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
 		if buf[0] != 0 && buf[1] != 0 {
 			continue
 		}
 		ddata := deepcrypt.DecryptAES(buf[2:n], []byte(aesKey))
-		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
+		//log.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {
-			fmt.Println("[tun client write to tun] udp write error:", err)
+			log.Println("[tun client write to tun] udp write error:", err)
 			continue
 		}
-		fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 	}
 }

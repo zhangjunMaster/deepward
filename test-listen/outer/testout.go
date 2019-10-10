@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -18,7 +17,7 @@ func main() {
 	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 9826} // 注意端口必须固定
 	dstAddr := &net.UDPAddr{IP: net.ParseIP("124.193.68.147"), Port: 41415}
 	// 开始打洞
-	fmt.Println("[srcAddr]:", srcAddr, "[dstAddr]:", dstAddr)
+	log.Println("[srcAddr]:", srcAddr, "[dstAddr]:", dstAddr)
 	bidirectionHole(srcAddr, dstAddr)
 }
 
@@ -35,7 +34,7 @@ func bidirectionHole(srcAddr *net.UDPAddr, anotherAddr *net.UDPAddr) {
 
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
-		fmt.Println("[Listen UDP err]:", err)
+		log.Println("[Listen UDP err]:", err)
 	}
 
 	defer conn.Close()
@@ -50,7 +49,7 @@ func bidirectionHole(srcAddr *net.UDPAddr, anotherAddr *net.UDPAddr) {
 			if _, err = conn.WriteTo([]byte("from srcAddr"), anotherAddr); err != nil {
 				log.Println("send msg fail", err)
 			}
-			fmt.Println("[开始打洞]")
+			log.Println("[开始打洞]")
 		}
 	}()
 	for {

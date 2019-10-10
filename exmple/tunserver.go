@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -16,7 +17,7 @@ const (
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		os.Exit(1)
 	}
 }
@@ -24,10 +25,10 @@ func checkError(err error) {
 func exeCmd(cmd string) {
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
+		log.Printf("execute %s error:%v", cmd, err)
 		os.Exit(1)
 	}
-	fmt.Println(string(out))
+	log.Println(string(out))
 }
 
 func setTunLinux() {
@@ -51,7 +52,7 @@ func main() {
 	case "linux":
 		setTunLinux()
 	default:
-		fmt.Println("OS NOT supported")
+		log.Println("OS NOT supported")
 		os.Exit(1)
 	}
 	// 1.监听 udp端口 9826
@@ -61,21 +62,21 @@ func main() {
 	checkError(err)
 	defer conn.Close()
 	raddr := &net.UDPAddr{}
-	fmt.Println("[tun server] Waiting IP Packet from UDP")
+	log.Println("[tun server] Waiting IP Packet from UDP")
 	go func() {
 		buf := make([]byte, 10000)
 		for {
 			// 2.从连接中 conn中读取数据
 			n, fromAddr, err := conn.ReadFromUDP(buf)
 			if err != nil {
-				fmt.Println("ReadFromUDP error:", err)
+				log.Println("ReadFromUDP error:", err)
 				continue
 			}
 			raddr = fromAddr
-			fmt.Printf("[tun server receive from client 1] receive %d bytes from %s\n", n, fromAddr.String())
+			log.Printf("[tun server receive from client 1] receive %d bytes from %s\n", n, fromAddr.String())
 			// 3.写到tun网卡中
 			n, _ = tun.Write(buf[:n])
-			fmt.Printf("[tun server write to tun 2] write %d bytes to tun interface\n", n)
+			log.Printf("[tun server write to tun 2] write %d bytes to tun interface\n", n)
 		}
 	}()
 
@@ -84,12 +85,12 @@ func main() {
 		// 1.tun网卡转发后，会有数据到 tun虚拟网卡中，再从tun网卡中读数据
 		n, err := tun.Read(buf)
 		if err != nil {
-			fmt.Println("[tun server read from tun 3] run read error:", err)
+			log.Println("[tun server read from tun 3] run read error:", err)
 			continue
 		}
 		// 2.将数据conn写到 raddr中
 		n, err = conn.WriteTo(buf[:n], raddr)
 		// n, err = conn.Write(buf[:n])
-		fmt.Printf("[tun server send to client 4] write %d bytes to udp network\n", n)
+		log.Printf("[tun server send to client 4] write %d bytes to udp network\n", n)
 	}
 }

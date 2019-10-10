@@ -31,7 +31,7 @@ var (
 
 func checkError(err error) {
 	if err != nil {
-		fmt.Println("Error:", err)
+		log.Println("Error:", err)
 		os.Exit(1)
 	}
 }
@@ -39,10 +39,10 @@ func checkError(err error) {
 func exeCmd(cmd string) {
 	out, err := exec.Command("bash", "-c", cmd).Output()
 	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
+		log.Printf("execute %s error:%v", cmd, err)
 		os.Exit(1)
 	}
-	fmt.Println(string(out))
+	log.Println(string(out))
 }
 
 func setTunServerLinux() {
@@ -55,7 +55,7 @@ func setTunServerLinux() {
 
 func checkErr(err error) {
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 }
@@ -82,9 +82,9 @@ func main() {
 	dstAddr := &net.UDPAddr{IP: net.ParseIP(OUTTER_IP), Port: OUTTER_PORT}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
-		fmt.Println("[Listen UDP err]:", err)
+		log.Println("[Listen UDP err]:", err)
 	}
-	fmt.Println("[listen]:", srcAddr)
+	log.Println("[listen]:", srcAddr)
 	defer conn.Close()
 
 	var n int
@@ -92,7 +92,7 @@ func main() {
 	if n, err = conn.WriteTo(pingpong, dstAddr); err != nil {
 		log.Println("send handshake:", err)
 	}
-	fmt.Println("[conn write 我是打洞消息]", n)
+	log.Println("[conn write 我是打洞消息]", n)
 
 	go func() {
 		for {
@@ -101,11 +101,11 @@ func main() {
 			if n, err = conn.WriteTo(tunipdata, dstAddr); err != nil {
 				log.Println("send msg fail", err)
 			}
-			fmt.Println("[打洞] dst:", OUTTER_IP, "[打洞数据]:", n)
+			log.Println("[打洞] dst:", OUTTER_IP, "[打洞数据]:", n)
 		}
 	}()
 
-	fmt.Println("[tun server] Waiting IP Packet from UDP")
+	log.Println("[tun server] Waiting IP Packet from UDP")
 
 	// 1.将conn的数据，先给虚拟网卡，虚拟网卡再转给物理网卡
 	go func() {
@@ -114,20 +114,20 @@ func main() {
 			// 1.tun接收来自物理网卡的数据
 			n, err := tun.Read(buf)
 			if err != nil {
-				fmt.Println("tun Read error:", err)
+				log.Println("tun Read error:", err)
 				continue
 			}
-			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+			log.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 			// 2.将接收的数据通过conn发送出去, util.IPv4Destination(buf).String()  => tun ip => endpoint
 			// n, err = conn.WriteTo(buf[:n], dstAddr) 原始写法
 			edata := deepcrypt.EncryptAES(buf[:n], []byte("1234567899876543"))
 			n, err = conn.WriteTo(edata, dstAddr)
 
 			if err != nil {
-				fmt.Println("udp write error:", err)
+				log.Println("udp write error:", err)
 				continue
 			}
-			fmt.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
+			log.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
 		}
 	}()
 
@@ -136,36 +136,36 @@ func main() {
 		// 3.conn连接中读取 buf
 		n, fromAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("udp Read error:", err)
+			log.Println("udp Read error:", err)
 			continue
 		}
-		fmt.Printf("[conn 收到数据  before]:%s\n", buf[:n])
+		log.Printf("[conn 收到数据  before]:%s\n", buf[:n])
 		//  fromAddr.String() => endpoint ip
-		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
-		fmt.Println("[3 fromAddr]:", fromAddr)
-		fmt.Printf("[3 tun  receive from remote] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+		log.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
+		log.Println("[3 fromAddr]:", fromAddr)
+		log.Printf("[3 tun  receive from remote] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 		// only ip(exclude port)
 		header, _ := ipv4.ParseHeader(buf)
-		fmt.Printf("[4header]: %+v \n", header)
+		log.Printf("[4header]: %+v \n", header)
 
 		port := util.IPv4DestinationPort(buf)
-		fmt.Printf("----[5 tun payload header port]  %d \n", port)
+		log.Printf("----[5 tun payload header port]  %d \n", port)
 
 		//payload, err := ipv4.ReadFrom(buf)
 		//if err != nil {
-		//	fmt.Println("[5 payload] err", err)
+		//	log.Println("[5 payload] err", err)
 		//}
-		//fmt.Println("[5 payload] %+v", payload)
+		//log.Println("[5 payload] %+v", payload)
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
 
 		// n, err = tun.Write(buf[:n]) 原始写法
 		ddata := deepcrypt.DecryptAES(buf[:n], []byte("1234567899876543"))
-		fmt.Printf("[conn 收到数据  after]:%s\n", ddata)
+		log.Printf("[conn 收到数据  after]:%s\n", ddata)
 		n, err = tun.Write(ddata)
 		if err != nil {
-			fmt.Println("[tun client write to tun] udp write error:", err)
+			log.Println("[tun client write to tun] udp write error:", err)
 			continue
 		}
-		fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 	}
 }

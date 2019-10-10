@@ -90,7 +90,7 @@ func CreateTUN(name string, mtu int) (*NativeTun, error) {
 	fd, err := unix.Socket(unix.AF_SYSTEM, unix.SOCK_DGRAM, 2)
 
 	if err != nil {
-		fmt.Println("[CreateTUN unix.Socket err]:", err)
+		log.Println("[CreateTUN unix.Socket err]:", err)
 		return nil, err
 	}
 
@@ -138,13 +138,13 @@ func CreateTUN(name string, mtu int) (*NativeTun, error) {
 	// 4.@@@转为非阻塞
 	err = syscall.SetNonblock(fd, true)
 	if err != nil {
-		fmt.Println("[SetNonblock err]:", err)
+		log.Println("[SetNonblock err]:", err)
 		return nil, err
 	}
 	// 5.@@@生成 fd 文件，os.NewFile，以文件描述符 fd 为基础
 	tun, err := CreateTUNFromFile(os.NewFile(uintptr(fd), ""), mtu)
 	if err != nil {
-		fmt.Println("[CreateTUNFromFile err]:", err)
+		log.Println("[CreateTUNFromFile err]:", err)
 	}
 	return tun, err
 }
@@ -157,10 +157,10 @@ func CreateTUNFromFile(file *os.File, mtu int) (*NativeTun, error) {
 	}
 	// 1.name: utun[0-9] 网卡名称
 	name, err := tun.Name()
-	fmt.Println("[name]:", name)
+	log.Println("[name]:", name)
 
 	if err != nil {
-		fmt.Println("[tun.Name] err:", err)
+		log.Println("[tun.Name] err:", err)
 		tun.tunFile.Close()
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func CreateTUNFromFile(file *os.File, mtu int) (*NativeTun, error) {
 		// net.InterfaceByName 通过网卡名获取网卡
 		iface, err := net.InterfaceByName(name)
 		if err != nil {
-			fmt.Println("[net.InterfaceByName]:", err)
+			log.Println("[net.InterfaceByName]:", err)
 			return -1, err
 		}
 		return iface.Index, nil
@@ -185,7 +185,7 @@ func CreateTUNFromFile(file *os.File, mtu int) (*NativeTun, error) {
 	// 3.网卡静态路由
 	tun.routeSocket, err = unix.Socket(unix.AF_ROUTE, unix.SOCK_RAW, unix.AF_UNSPEC)
 	if err != nil {
-		fmt.Println("[CreateTUNFromFile unix.Socket]:", err)
+		log.Println("[CreateTUNFromFile unix.Socket]:", err)
 		tun.tunFile.Close()
 		return nil, err
 	}
@@ -374,16 +374,16 @@ func (tun *NativeTun) MTU() (int, error) {
 func main() {
 	tun, err := CreateTUN("utun2", 1500)
 	if err != nil {
-		fmt.Println("[err]:", err)
+		log.Println("[err]:", err)
 	}
-	fmt.Println("[tun]:", tun)
+	log.Println("[tun]:", tun)
 
 	// 2.打洞，发送握手信息
 	srcAddr := &net.UDPAddr{IP: net.IPv4zero, Port: 35520} // 注意端口必须固定
 	dstAddr := &net.UDPAddr{IP: net.ParseIP(OUTTER_IP), Port: 9826}
 	conn, err := net.ListenUDP("udp", srcAddr)
 	if err != nil {
-		fmt.Println("[Listen UDP err]:", err)
+		log.Println("[Listen UDP err]:", err)
 	}
 
 	defer conn.Close()
@@ -392,7 +392,7 @@ func main() {
 	if n, err = conn.WriteTo([]byte("我是打洞消息"), dstAddr); err != nil {
 		log.Println("send handshake:", err)
 	}
-	fmt.Println("[conn write 我是打洞消息]", n)
+	log.Println("[conn write 我是打洞消息]", n)
 
 	go func() {
 		for {
@@ -400,11 +400,11 @@ func main() {
 			if n, err = conn.WriteTo([]byte("from ["+TUN_IP+"]"), dstAddr); err != nil {
 				log.Println("send msg fail", err)
 			}
-			fmt.Println("[打洞] dst:", OUTTER_IP, "[打洞数据]:", n)
+			log.Println("[打洞] dst:", OUTTER_IP, "[打洞数据]:", n)
 		}
 	}()
 
-	fmt.Println("[tun server] Waiting IP Packet from UDP")
+	log.Println("[tun server] Waiting IP Packet from UDP")
 
 	// 1.将conn的数据，先给虚拟网卡，虚拟网卡再转给物理网卡
 	go func() {
@@ -413,17 +413,17 @@ func main() {
 			// 1.tun接收来自物理网卡的数据
 			n, err := tun.Read(buf)
 			if err != nil {
-				fmt.Println("tun Read error:", err)
+				log.Println("tun Read error:", err)
 				continue
 			}
-			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+			log.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 			// 2.将接收的数据通过conn发送出去
 			n, err = conn.WriteTo(buf[:n], dstAddr)
 			if err != nil {
-				fmt.Println("udp write error:", err)
+				log.Println("udp write error:", err)
 				continue
 			}
-			fmt.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
+			log.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
 		}
 	}()
 
@@ -432,18 +432,18 @@ func main() {
 		// 3.conn连接中读取 buf
 		n, fromAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("udp Read error:", err)
+			log.Println("udp Read error:", err)
 			continue
 		}
-		fmt.Printf("[conn 收到数据]:%s\n", buf[:n])
-		fmt.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
+		log.Printf("[conn 收到数据]:%s\n", buf[:n])
+		log.Printf("[tun client receive from conn] receive %d bytes from %s\n", n, fromAddr.String())
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
 		n, err = tun.Write(buf[:n])
 		if err != nil {
-			fmt.Println("[tun client write to tun] udp write error:", err)
+			log.Println("[tun client write to tun] udp write error:", err)
 			continue
 		}
-		fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+		log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 	}
 	for {
 	}

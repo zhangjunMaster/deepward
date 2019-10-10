@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"strconv"
 
@@ -38,21 +38,20 @@ func init() {
 }
 
 func parseHeader(buf []byte, n int, fromAddr *net.UDPAddr) {
-	fmt.Println("--------------\n")
-	fmt.Printf("[1 tun  receive from remote] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+	log.Println("--------------\n")
+	log.Printf("[1 tun  receive from remote] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 	header, _ := ipv4.ParseHeader(buf)
-	fmt.Printf("[2header]: %+v \n", header)
-	fmt.Printf("[3 tun payload header port]  %d \n", util.IPv4DestinationPort(buf))
-	fmt.Printf("[4 from address]:%+v\n", fromAddr)
-	fmt.Printf("[5 dst ip]: %+v", util.IPv4Destination(buf))
-	fmt.Println("--------------\n")
+	log.Printf("[2header]: %+v \n", header)
+	log.Printf("[3 tun payload header port]  %d \n", util.IPv4DestinationPort(buf))
+	log.Printf("[4 from address]:%+v\n", fromAddr)
+	log.Printf("[5 dst ip]: %+v", util.IPv4Destination(buf))
+	log.Println("--------------\n")
 }
 
 func main() {
 	// 1.开启虚拟网卡
 	tun, err := tun.Open("tun0", tun.DevTun)
 	util.CheckError(err)
-	util.SetTunServerLinux(TUN_IP)
 
 	// 设置环境
 	util.SetTunServerLinux(TUN_IP)
@@ -63,7 +62,7 @@ func main() {
 	err = p.PingPong()
 
 	// 3.tun接收和发送消息
-	fmt.Println("[tun client] Waiting IP Packet from tun interface")
+	log.Println("[tun client] Waiting IP Packet from tun interface")
 	var aesKey []byte
 	go func() {
 		buf := make([]byte, 10000)
@@ -71,14 +70,14 @@ func main() {
 			// 1.tun接收来自物理网卡的数据
 			n, err := tun.Read(buf)
 			if err != nil {
-				fmt.Println("tun Read error:", err)
+				log.Println("tun Read error:", err)
 				continue
 			}
-			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
+			log.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
 
 			// 2.将接收的数据通过conn发送出去
 			if len(aesKey) == 0 {
-				fmt.Println("[no aes key]")
+				log.Println("[no aes key]")
 				continue
 			}
 
@@ -87,10 +86,10 @@ func main() {
 
 			n, err = p.Conn.WriteTo(data, p.DstAddr)
 			if err != nil {
-				fmt.Println("udp write error:", err)
+				log.Println("udp write error:", err)
 				continue
 			}
-			fmt.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
+			log.Printf("[tun client conn send to dest] write %d bytes to udp network\n", n)
 		}
 	}()
 
@@ -99,18 +98,18 @@ func main() {
 		// 3.conn连接中读取 buf
 		n, fromAddr, err := p.Conn.ReadFromUDP(buf)
 		if err != nil {
-			fmt.Println("udp Read error:", err)
+			log.Println("udp Read error:", err)
 			continue
 		}
 		// ecc decrypt
 		if buf[0] == 0 && buf[1] == 0 {
 			newAesKey, err := p.DecrptKey(buf[:n])
 			if err != nil {
-				fmt.Println("[DecrptKey error]:", err)
+				log.Println("[DecrptKey error]:", err)
 				continue
 			}
 			if newAesKey == nil && len(aesKey) == 0 {
-				fmt.Println("[no aes key]")
+				log.Println("[no aes key]")
 				continue
 			} else if len(newAesKey) != 0 {
 				aesKey = newAesKey
@@ -120,27 +119,27 @@ func main() {
 		// 4.将conn的数据写入tun，并通过tun发送到物理网卡上
 		// aes decrypt
 		if len(aesKey) == 0 {
-			fmt.Println("no aes key")
+			log.Println("no aes key")
 			continue
 		}
 		if buf[0] == 0 && buf[1] == 1 {
-			fmt.Println("[aesKey]:", aesKey)
+			log.Println("[aesKey]:", aesKey)
 			ddata := deepcrypt.DecryptAES(buf[2:n], aesKey)
 			// decrypt is right
 			parseHeader(buf[2:n], n, fromAddr)
 
 			dstPort := strconv.Itoa(int(util.IPv4DestinationPort(ddata)))
 			if !util.Filter(ALLOW_PORT, dstPort) {
-				fmt.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
+				log.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
 				continue
 			}
 
 			n, err = tun.Write(ddata)
 			if err != nil {
-				fmt.Println("[tun client write to tun] udp write error:", err)
+				log.Println("[tun client write to tun] udp write error:", err)
 				continue
 			}
-			fmt.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
+			log.Printf("[tun client write to tun] write %d bytes to tun interface\n", n)
 		}
 	}
 }

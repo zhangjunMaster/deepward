@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"strconv"
@@ -20,7 +19,7 @@ func main() {
 	// 这个必须是公网的 ip
 	dstAddr := &net.UDPAddr{IP: net.ParseIP("124.193.68.147"), Port: 9826}
 	// 开始打洞
-	fmt.Println("[srcAddr]:", srcAddr, "[dstAddr]:", dstAddr)
+	log.Println("[srcAddr]:", srcAddr, "[dstAddr]:", dstAddr)
 	bidirectionHole(srcAddr, dstAddr)
 }
 
@@ -37,9 +36,9 @@ func bidirectionHole(srcAddr *net.UDPAddr, anotherAddr *net.UDPAddr) {
 	conn, err := net.DialUDP("udp", srcAddr, anotherAddr)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
-	fmt.Println(conn.LocalAddr().String())
+	log.Println(conn.LocalAddr().String())
 	defer conn.Close()
 	// 向另一个peer发送一条udp消息(对方peer的nat设备会丢弃该消息,非法来源),用意是在自身的nat设备打开一条可进入的通道,这样对方peer就可以发过来udp消息
 	if _, err = conn.Write([]byte(HAND_SHAKE_MSG)); err != nil {
@@ -51,7 +50,7 @@ func bidirectionHole(srcAddr *net.UDPAddr, anotherAddr *net.UDPAddr) {
 			if _, err = conn.Write([]byte("from srcAddr")); err != nil {
 				log.Println("send msg fail", err)
 			}
-			fmt.Println("[开始打洞]")
+			log.Println("[开始打洞]")
 		}
 	}()
 	for {

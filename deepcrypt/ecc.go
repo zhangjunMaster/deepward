@@ -4,7 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -106,7 +106,7 @@ func Decrypt(ct []byte, sprk string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("[decrypto]:", string(data), err)
+	log.Println("[decrypto]:", string(data), err)
 	return data, nil
 }
 
@@ -125,36 +125,36 @@ func main() {
 	//3.对ecdsa的公私钥进行base64,生成可存储的公私钥对
 	sprk := ByteToBase64(bprk)
 	spuk := ByteToBase64(bpuk)
-	fmt.Printf("spuk: %s\nsprk: %s \n", spuk, sprk)
+	log.Printf("spuk: %s\nsprk: %s \n", spuk, sprk)
 
 	// 4.将公私钥对转为 [] byte
 	bprk, err = Base64ToByte(sprk)
 	if err != nil {
-		fmt.Println("[Base64ToByte err]:", err)
+		log.Println("[Base64ToByte err]:", err)
 	}
 	bpuk, err = Base64ToByte(spuk)
 	if err != nil {
-		fmt.Println("[Base64ToByte err]:", err)
+		log.Println("[Base64ToByte err]:", err)
 	}
 	//5.[]byte => key
 	prk, err = crypto.ToECDSA(bprk)
 	puk, err = crypto.UnmarshalPubkey(bpuk)
 	if err != nil {
-		fmt.Println("[UnmarshalPubkey err]:", err)
+		log.Println("[UnmarshalPubkey err]:", err)
 	}
 	// 6.加密
 	endata, err := ECCEncrypt([]byte(data), puk)
-	fmt.Println("[endata, err]", err)
+	log.Println("[endata, err]", err)
 
 	// 7.解密
 	ddata, err := ECCDecrypt(endata, prk)
-	fmt.Println("[decrypto]:", string(ddata), err)
+	log.Println("[decrypto]:", string(ddata), err)
 
 	//测试是否转换成功,prk是ecdsa pri, lpuk是ecdsa puk
 	eccData, err := EccSign([]byte(data), prk)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(EccVerify([]byte(data), eccData, puk))
-	fmt.Println(data)
+	log.Println(EccVerify([]byte(data), eccData, puk))
+	log.Println(data)
 }

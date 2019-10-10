@@ -51,9 +51,9 @@ func Generate128Key(length int) string {
 //	x := []byte("test iutirtui datatest 45435 datatest gsfgds datatest 5436546 datatest datatest datatest datatest datatest datatest datatest datatest data")
 //	keyString := getRandomString(16)
 //	key := []byte(keyString)
-//	fmt.Println("[len]:", len(key))
+//	log.Println("[len]:", len(key))
 //	x1 := EncryptAES(x, key)
 //	x2 := DecryptAES(x1, key)
-//	fmt.Println(base64.StdEncoding.EncodeToString(x1))
-//	fmt.Print(string(x2))
+//	log.Println(base64.StdEncoding.EncodeToString(x1))
+//	log.Print(string(x2))
 //}

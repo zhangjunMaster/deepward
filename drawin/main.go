@@ -1,13 +1,13 @@
 package main
 
-import "fmt"
+import "log"
 
 func main() {
 	tun, err := CreateTUN("utun2", 1500)
 	if err != nil {
-		fmt.Println("[err]:", err)
+		log.Println("[err]:", err)
 	}
-	fmt.Println("[tun]:", tun)
+	log.Println("[tun]:", tun)
 	for {
 	}
 }
