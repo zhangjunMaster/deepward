@@ -2,8 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
+	"strconv"
 
 	"github.com/spf13/viper"
 	"github.com/zhangjunMaster/deepward/config"
@@ -14,35 +13,13 @@ import (
 )
 
 var (
-	TUN_IP   string
-	ALLOW_IP string
-	DST_IP   string
-	DST_PORT int
-	PORT     int
+	TUN_IP     string
+	ALLOW_IP   string
+	DST_IP     string
+	DST_PORT   int
+	PORT       int
+	ALLOW_PORT string
 )
-
-// 部署在2.159上作为client
-func checkError(err error) {
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-}
-
-func exeCmd(cmd string) {
-	out, err := exec.Command("bash", "-c", cmd).Output()
-	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
-		os.Exit(1)
-	}
-	fmt.Println(string(out))
-}
-
-func setTunLinux() {
-	exeCmd("ip link set dev tun0 up")
-	exeCmd(fmt.Sprintf("ip addr add %s/24 dev tun0", TUN_IP))
-	exeCmd(fmt.Sprintf("ip -4 route add %s/32 via %s dev tun0", ALLOW_IP, TUN_IP))
-}
 
 func init() {
 	if err := config.Init("config.yaml"); err != nil {
@@ -53,14 +30,14 @@ func init() {
 	DST_IP = viper.GetString("PEER.IP")
 	DST_PORT = viper.GetInt("PEER.PORT")
 	PORT = viper.GetInt("TUN.PORT")
+	ALLOW_PORT = viper.GetString("TUN.ALLOW_PORT")
 }
 
 func main() {
-
 	// 1.开启虚拟网卡
 	tun, err := tun.Open("tun0", tun.DevTun)
-	checkError(err)
-	setTunLinux()
+	util.CheckError(err)
+	util.SetTunClientLinux(TUN_IP, ALLOW_IP)
 
 	// 2.p2p打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
@@ -94,8 +71,14 @@ func main() {
 				continue
 			}
 			fmt.Printf("[tun client receive from local] receive %d bytes, from %s to %s, \n", n, util.IPv4Source(buf).String(), util.IPv4Destination(buf).String())
-
+			// 过滤
 			// 2.将接收的数据通过conn发送出去
+			fmt.Println("[port]", util.IPv4DestinationPort(buf), int(util.IPv4DestinationPort(buf)))
+			dstPort := strconv.Itoa(int(util.IPv4DestinationPort(buf)))
+			if !util.Filter(ALLOW_PORT, dstPort) {
+				fmt.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
+				continue
+			}
 			edata := deepcrypt.EncryptAES(buf[:n], []byte(aesKey))
 			lable := []byte{0, 1}
 			data := util.Concat(lable, edata)

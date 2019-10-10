@@ -3,8 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
-	"os/exec"
+	"strconv"
 
 	"github.com/spf13/viper"
 	"github.com/zhangjunMaster/deepward/config"
@@ -16,37 +15,15 @@ import (
 )
 
 var (
-	TUN_IP   string
-	ALLOW_IP string
-	DST_IP   string
-	DST_PORT int
-	PORT     int
+	TUN_IP     string
+	ALLOW_IP   string
+	DST_IP     string
+	DST_PORT   int
+	PORT       int
+	ALLOW_PORT string
 )
 
 // 部署在2.159上作为client
-func checkError(err error) {
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-}
-
-func exeCmd(cmd string) {
-	out, err := exec.Command("bash", "-c", cmd).Output()
-	if err != nil {
-		fmt.Printf("execute %s error:%v", cmd, err)
-		os.Exit(1)
-	}
-	fmt.Println(string(out))
-}
-
-func setTunLinux() {
-	exeCmd("ip link set dev tun0 up")
-	exeCmd(fmt.Sprintf("ip addr add %s/24 dev tun0", TUN_IP))
-	// 把符合条件的用公网ip出去
-	exeCmd("iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -o eth0 -j MASQUERADE")
-	exeCmd("echo '1' > /proc/sys/net/ipv4/ip_forward")
-}
 
 func init() {
 	if err := config.Init("config.yaml"); err != nil {
@@ -57,6 +34,7 @@ func init() {
 	PORT = viper.GetInt("TUN.PORT")
 	DST_IP = viper.GetString("PEER.IP")
 	DST_PORT = viper.GetInt("PEER.PORT")
+	ALLOW_PORT = viper.GetString("TUN.ALLOW_PORT")
 }
 
 func parseHeader(buf []byte, n int, fromAddr *net.UDPAddr) {
@@ -73,9 +51,11 @@ func parseHeader(buf []byte, n int, fromAddr *net.UDPAddr) {
 func main() {
 	// 1.开启虚拟网卡
 	tun, err := tun.Open("tun0", tun.DevTun)
-	checkError(err)
-	setTunLinux()
+	util.CheckError(err)
+	util.SetTunServerLinux(TUN_IP)
 
+	// 设置环境
+	util.SetTunServerLinux(TUN_IP)
 	// 2.p2p打洞，发送握手信息
 	// https://blog.csdn.net/rankun1/article/details/78027027
 	p, err := p2p.GenerateP2P(PORT, TUN_IP, DST_PORT, DST_IP)
@@ -148,6 +128,13 @@ func main() {
 			ddata := deepcrypt.DecryptAES(buf[2:n], aesKey)
 			// decrypt is right
 			parseHeader(buf[2:n], n, fromAddr)
+
+			dstPort := strconv.Itoa(int(util.IPv4DestinationPort(ddata)))
+			if !util.Filter(ALLOW_PORT, dstPort) {
+				fmt.Printf("[forbidden]: ALLOW_PORT %s , port %s", ALLOW_PORT, dstPort)
+				continue
+			}
+
 			n, err = tun.Write(ddata)
 			if err != nil {
 				fmt.Println("[tun client write to tun] udp write error:", err)

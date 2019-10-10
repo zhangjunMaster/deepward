@@ -5,7 +5,7 @@ TUN:
     IP: 10.0.0.2
     PORT: 50879
     ALLOW_IP: 192.168.3.51
-    ALLOW_PORT: "*"
+    ALLOW_PORT: "3000"
     PRK: 9iC6PwXgp/6VxXMcq/cQKHwCpX/j5IxIsGFM6gWm8S0=
     PUK: BN6vEfnXVeqF7ry1oarKBLQ7kCDG7hrkVCv9rDgPv8genRMosu/y+Ow9770X0rOLzFEjEuJfN6WyHEq+yDarcnU=
 
