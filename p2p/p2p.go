@@ -40,9 +40,8 @@ func (p *P2P) PingPong() error {
 	// conn
 	n, err := p.Conn.WriteTo([]byte("ping"), p.DstAddr)
 	if err != nil {
-		log.Println("send handshake:", err)
+		log.Println("[send handshake]:", err, n)
 	}
-	log.Println("[conn write ping]", n)
 	if err != nil {
 		return err
 	}
@@ -81,9 +80,8 @@ func (p *P2P) ExchangeAesKey() (string, error) {
 
 	n, err := p.Conn.WriteTo(data, p.DstAddr)
 	if err != nil {
-		log.Println("send handshake:", err)
+		log.Println("[send handshake]:", err, n)
 	}
-	log.Println("[conn write ping]", n)
 	if err != nil {
 		return "", err
 	}
@@ -113,12 +111,10 @@ func PingPong(listenPort int, tunIP string, dstPort int, dstIP string) (*net.UDP
 	log.Println("[dstAddr]:", dstAddr)
 	//defer conn.Close()
 
-	var n int
 	pingpong := deepcrypt.EncryptAES([]byte("ping"), []byte("1234567899876543"))
-	if n, err = conn.WriteTo(pingpong, dstAddr); err != nil {
-		log.Println("send handshake:", err)
+	if n, err := conn.WriteTo(pingpong, dstAddr); err != nil {
+		log.Println("[send handshake]:", err, n)
 	}
-	log.Println("[conn write ping]", n)
 	if err != nil {
 		return nil, err
 	}
