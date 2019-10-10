@@ -48,7 +48,7 @@ func (p *P2P) PingPong() error {
 
 	go func() {
 		for {
-			time.Sleep(10 * time.Second)
+			time.Sleep(30 * time.Second)
 			//tunipdecrypt := deepcrypt.EncryptAES([]byte(p.TunIP), []byte("1234567899876543"))
 			if _, err = p.Conn.WriteTo([]byte(p.TunIP), p.DstAddr); err != nil {
 				log.Println("send msg fail", err)
